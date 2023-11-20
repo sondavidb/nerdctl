@@ -93,8 +93,7 @@ func sameOpts(want snapshotterOpts) func(*testing.T, snapshotterOpts) {
 func getAndApplyRemoteOpts(t *testing.T, sn string) *containerd.RemoteContext {
 	config := &pull.Config{}
 	snOpts := getSnapshotterOpts(sn)
-	rFlags := RemoteSnapshotterFlags{}
-	snOpts.apply(config, testRef, rFlags)
+	snOpts.apply(config, testRef)
 
 	rc := &containerd.RemoteContext{}
 	for _, o := range config.RemoteOpts {

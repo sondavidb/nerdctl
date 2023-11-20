@@ -16,11 +16,7 @@
 
 package types
 
-import (
-	"io"
-
-	"github.com/containerd/nerdctl/pkg/imgutil"
-)
+import "io"
 
 // ImageListOptions specifies options for `nerdctl image list`.
 type ImageListOptions struct {
@@ -181,6 +177,11 @@ type ImagePushOptions struct {
 	AllowNondistributableArtifacts bool
 }
 
+type RemoteSnapshotterFlags struct {
+	// Specify a particular index digest for SOCI. If left empty, SOCI will automatically use the index determined by the selection policy.
+	SociIndexDigest string
+}
+
 // ImagePullOptions specifies options for `nerdctl (image) pull`.
 type ImagePullOptions struct {
 	Stdout        io.Writer
@@ -198,7 +199,7 @@ type ImagePullOptions struct {
 	// multiaddr of IPFS API (default uses $IPFS_PATH env variable if defined or local directory ~/.ipfs)
 	IPFSAddress string
 	// Flags to pass into remote snapshotters
-	RFlags imgutil.RemoteSnapshotterFlags
+	RFlags RemoteSnapshotterFlags
 }
 
 // ImageTagOptions specifies options for `nerdctl (image) tag`.

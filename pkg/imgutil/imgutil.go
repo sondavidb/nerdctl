@@ -51,6 +51,8 @@ type EnsuredImage struct {
 	Remote      bool // true for stargz or overlaybd
 }
 
+type RemoteSnapshotterFlags pull.RemoteSnapshotterFlags
+
 // PullMode is either one of "always", "missing", "never"
 type PullMode = string
 
@@ -201,11 +203,16 @@ func PullImage(ctx context.Context, client *containerd.Client, stdout, stderr io
 	}
 	defer done(ctx)
 
+	pullRFlags := pull.RemoteSnapshotterFlags{
+		SociIndexDigest: rFlags.SociIndexDigest,
+	}
+
 	var containerdImage containerd.Image
 	config := &pull.Config{
 		Resolver:   resolver,
 		RemoteOpts: []containerd.RemoteOpt{},
 		Platforms:  ocispecPlatforms, // empty for all-platforms
+		RFlags:     pullRFlags,
 	}
 	if !quiet {
 		config.ProgressOutput = stderr
@@ -230,7 +237,7 @@ func PullImage(ctx context.Context, client *containerd.Client, stdout, stderr io
 			containerd.WithUnpackOpts([]containerd.UnpackOpt{imgcryptUnpackOpt}))
 
 		// different remote snapshotters will update pull.Config separately
-		snOpt.apply(config, ref, rFlags)
+		snOpt.apply(config, ref)
 	} else {
 		log.G(ctx).Debugf("The image will not be unpacked. Platforms=%v.", ocispecPlatforms)
 	}

@@ -20,7 +20,6 @@ import (
 	"github.com/containerd/nerdctl/pkg/api/types"
 	"github.com/containerd/nerdctl/pkg/clientutil"
 	"github.com/containerd/nerdctl/pkg/cmd/image"
-	"github.com/containerd/nerdctl/pkg/imgutil"
 	"github.com/spf13/cobra"
 )
 
@@ -113,7 +112,7 @@ func processPullCommandFlags(cmd *cobra.Command) (types.ImagePullOptions, error)
 		Unpack:        unpackStr,
 		Quiet:         quiet,
 		IPFSAddress:   ipfsAddressStr,
-		RFlags: imgutil.RemoteSnapshotterFlags{
+		RFlags: types.RemoteSnapshotterFlags{
 			SociIndexDigest: sociIndexDigest,
 		},
 		Stdout: cmd.OutOrStdout(),
