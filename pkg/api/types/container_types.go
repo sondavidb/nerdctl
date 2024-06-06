@@ -19,6 +19,8 @@ package types
 import (
 	"io"
 	"time"
+
+	"github.com/containerd/containerd/pkg/idtools"
 )
 
 // ContainerStartOptions specifies options for the `nerdctl (container) start`.
@@ -255,6 +257,11 @@ type ContainerCreateOptions struct {
 
 	// ImagePullOpt specifies image pull options which holds the ImageVerifyOptions for verifying the image.
 	ImagePullOpt ImagePullOptions
+
+	// uidmap specifies the usernamespace mapping for the container
+	IdmapUser idtools.IdentityMapping
+
+	UidMapUser string
 }
 
 // ContainerStopOptions specifies options for `nerdctl (container) stop`.

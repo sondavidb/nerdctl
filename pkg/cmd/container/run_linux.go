@@ -19,6 +19,7 @@ package container
 import (
 	"context"
 	"fmt"
+
 	"strings"
 
 	"github.com/containerd/containerd"
@@ -30,6 +31,7 @@ import (
 	"github.com/containerd/nerdctl/pkg/bypass4netnsutil"
 	"github.com/containerd/nerdctl/pkg/containerutil"
 	"github.com/containerd/nerdctl/pkg/idutil/containerwalker"
+	"github.com/containerd/nerdctl/pkg/imgutil"
 	"github.com/containerd/nerdctl/pkg/rootlessutil"
 	"github.com/containerd/nerdctl/pkg/strutil"
 	"github.com/docker/go-units"
@@ -125,6 +127,11 @@ func setPlatformOptions(ctx context.Context, client *containerd.Client, id, uts 
 	opts, err = setOOMScoreAdj(opts, options.OomScoreAdjChanged, options.OomScoreAdj)
 	if err != nil {
 		return nil, err
+	}
+
+	if !options.IdmapUser.Empty() {
+		opts = append(opts,
+			oci.WithUserNamespace(options.IdmapUser.ToSpec()))
 	}
 
 	return opts, nil
@@ -250,4 +257,12 @@ func withOOMScoreAdj(score int) oci.SpecOpts {
 		s.Process.OOMScoreAdj = &score
 		return nil
 	}
+}
+
+func generateSnapshotOption(id string, ensured *imgutil.EnsuredImage, options types.ContainerCreateOptions) (containerd.NewContainerOpts, error) {
+	if options.IdmapUser.Empty() {
+		return containerd.WithNewSnapshot(id, ensured.Image), nil
+	}
+	return containerd.WithNewSnapshot(id, ensured.Image, containerd.WithMultiRemapperLabels(options.IdmapUser)), nil
+
 }

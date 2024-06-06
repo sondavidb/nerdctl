@@ -390,6 +390,13 @@ func processContainerCreateOptions(cmd *cobra.Command) (opt types.ContainerCreat
 	}
 	// #endregion
 
+	// #region for uid flags
+	opt.UidMapUser, err = cmd.Flags().GetString("uidmap")
+	if err != nil {
+		return
+	}
+	// #endregion
+
 	// #region for image pull and verify options
 	imageVerifyOpt, err := processImageVerifyOptions(cmd)
 	if err != nil {

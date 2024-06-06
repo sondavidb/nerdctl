@@ -152,6 +152,7 @@ func setCreateFlags(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("cgroupns", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"host", "private"}, cobra.ShellCompDirectiveNoFileComp
 	})
+	cmd.Flags().String("uidmap", "", "Run inside a user namespace of the specified user; ID mappings will be loaded for the user from /etc/subuid and /etc/subgid")
 	cmd.Flags().String("cpuset-cpus", "", "CPUs in which to allow execution (0-3, 0,1)")
 	cmd.Flags().String("cpuset-mems", "", "MEMs in which to allow execution (0-3, 0,1)")
 	cmd.Flags().Uint64("cpu-shares", 0, "CPU shares (relative weight)")
