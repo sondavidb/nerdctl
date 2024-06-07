@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -590,5 +591,77 @@ func TestBuildAttestation(t *testing.T) {
 	}
 	if _, err := os.Stat(testProvenanceFilePath); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestBuildWithPull(t *testing.T) {
+	testutil.RequiresBuild(t)
+
+	oldImage := "ubuntu:18.04"
+	oldImageSha := "152dc042452c496007f07ca9127571cb9c29697f42acbfad72324b2bb2e43c98"
+	newImage := "ubuntu:latest"
+
+	buildkitConfigPath := "/etc/buildkit/buildkitd.toml"
+
+	currConfig, err := exec.Command("cat", buildkitConfigPath).Output()
+	assert.NilError(t, err)
+
+	defer func() {
+		assert.NilError(t, os.WriteFile(buildkitConfigPath, currConfig, 0644))
+		_, err = exec.Command("systemctl", "restart", "buildkit").Output()
+		assert.NilError(t, err)
+	}()
+
+	buildkitConfig := fmt.Sprintf(`[worker.oci]
+enabled = false
+
+[worker.containerd]
+enabled = true
+namespace = "%s"`, testutil.Namespace)
+	os.WriteFile(buildkitConfigPath, []byte(buildkitConfig), 0644)
+	_, err = exec.Command("systemctl", "restart", "buildkit").Output()
+	assert.NilError(t, err)
+
+	testCases := []struct {
+		name string
+		pull string
+	}{
+		{
+			name: "build with local image",
+			pull: "false",
+		},
+		{
+			name: "build with newest image",
+			pull: "true",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			base := testutil.NewBase(t)
+			defer base.Cmd("builder", "prune").AssertOK()
+			base.Cmd("image", "prune", "--force", "--all").AssertOK()
+
+			base.Cmd("pull", oldImage).Run()
+			base.Cmd("tag", oldImage, newImage).Run()
+
+			dockerfile := fmt.Sprintf(`FROM %s`, newImage)
+			tmpDir := t.TempDir()
+			err := os.WriteFile(filepath.Join(tmpDir, "Dockerfile"), []byte(dockerfile), 0644)
+			assert.NilError(t, err)
+
+			buildCtx := createBuildContext(t, dockerfile)
+
+			buildCmd := []string{"build", buildCtx}
+			switch tc.pull {
+			case "false":
+				buildCmd = append(buildCmd, "--pull=false")
+				base.Cmd(buildCmd...).AssertErrContains(oldImageSha)
+			case "true":
+				buildCmd = append(buildCmd, "--pull=true")
+				base.Cmd(buildCmd...).AssertErrNotContains(oldImageSha)
+			}
+		})
 	}
 }
