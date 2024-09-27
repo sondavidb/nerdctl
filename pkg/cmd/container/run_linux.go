@@ -18,6 +18,7 @@ package container
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"strings"
@@ -25,7 +26,9 @@ import (
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/containers"
 	"github.com/containerd/containerd/oci"
+	"github.com/containerd/containerd/pkg/idtools"
 	"github.com/containerd/containerd/pkg/userns"
+	"github.com/containerd/containerd/snapshots"
 	"github.com/containerd/log"
 	"github.com/containerd/nerdctl/pkg/api/types"
 	"github.com/containerd/nerdctl/pkg/bypass4netnsutil"
@@ -263,6 +266,27 @@ func generateSnapshotOption(id string, ensured *imgutil.EnsuredImage, options ty
 	if options.IdmapUser.Empty() {
 		return containerd.WithNewSnapshot(id, ensured.Image), nil
 	}
-	return containerd.WithNewSnapshot(id, ensured.Image, containerd.WithMultiRemapperLabels(options.IdmapUser)), nil
+	return containerd.WithNewSnapshot(id, ensured.Image,
+		WithUidRemapperLabels(options.IdmapUser),
+		WithGidRemapperLabels(options.IdmapUser),
+	), nil
 
+}
+
+func WithUidRemapperLabels(idmap idtools.IdentityMapping) snapshots.Opt {
+	if val, err := json.Marshal(idmap.UIDMaps); err == nil {
+		return snapshots.WithLabels(map[string]string{
+			snapshots.LabelSnapshotUIDMapping: string(val),
+		})
+	}
+	return snapshots.WithLabels(map[string]string{})
+}
+
+func WithGidRemapperLabels(idmap idtools.IdentityMapping) snapshots.Opt {
+	if val, err := json.Marshal(idmap.GIDMaps); err == nil {
+		return snapshots.WithLabels(map[string]string{
+			snapshots.LabelSnapshotGIDMapping: string(val),
+		})
+	}
+	return snapshots.WithLabels(map[string]string{})
 }
